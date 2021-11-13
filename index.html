@@ -5,7 +5,6 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
@@ -20,18 +19,48 @@
             <input type="password" id="PIN" name="PIN" v-model='PIN'><br><br>
             <button class="btn btn-primary" v-on:click='login'>Login</button>
         </div>
-       
+       <div v-if='loggedIn'>
+        <div v-for="(account, index) in accounts">
+          <account @account-select='accountSelect' v-bind:currency="account.currency" v-bind:current_status="account.currentStatus" v-bind:product_id="account.productID" v-bind:interest_rate="account.interestRate" v-bind:account_id="account.accountID" v-bind:account_open_date="account.accountOpenDate" v-bind:balance="account.balance"></account>
+        </div>
+       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script>
+      Vue.component('account',
+            {data: function () {
+            return {
+              
+            }},created:()=>{
+              
+            }, 
+            props: {interest_rate:String, account_id:String,parent_account_flag:String,balance:String,product_id:String,current_status:String,currency:String,home_branch:String,account_open_date:String,maintenancehistory:Object,officer_id:String},
+            template: `
+            <div class="card" style="width: 18rem;">
+            <div class="card-body">
+              <h5 class="card-title">{{account_id}}, {{account_open_date}} {{balance}} {{interest_rate}} {{product_id}} {{current_status}} {{currency}}</h5>
+              <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+              <a href="#" class="btn btn-primary"@click="select()">Select Account</a>
+            </div>
+            </div>
+            `,
+            methods:{
+              select() {
+                console.log(this.account_id)
+                this.$emit('account-select', this.account_id)
+              }
+            }
+            })
+
         var app = new Vue({
         el: '#app',
         data: {
       loggedIn: false,
       userID: '',
-      PIN: ''
+      PIN: '',
+      accounts: []
         },methods:{
             login: function(){
                 axios.post(`http://tbankonline.com/SMUtBank_API/Gateway?Header={"Header": {"serviceName": "getCustomerAccounts", "userID": "${app.userID}", "PIN": "${app.PIN}", "OTP": "999999"}}`)
@@ -40,11 +69,15 @@
                         app.loggedIn = true;
                     }
                     console.log(response);
+                    app.accounts = response.data.Content.ServiceResponse.AccountList.account
                    
                 })
                 .catch(function (error) {
                     console.log(error);
                 });
+            },
+            accountSelect: function(account_id){
+                console.log(`Account ${account_id} was selected`)
             }
         }   
         })   
