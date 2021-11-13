@@ -1,6 +1,7 @@
 from flask import Flask, request
 import requests, json
-from functions import url
+from functions import url,getRecord
+from getTransactionTypes import getTransactionTypes
 
 app = Flask(__name__)
 
@@ -41,10 +42,10 @@ def getDepositAccountDetails():
     data = json.loads(request.data)
     userID = data['userID']
     PIN = data['PIN']
+    accountID = data['accountID']
     serviceName = 'getDepositAccountDetails'
     OTP = '999999'
     #Content
-    accountID = '7681'
     
     headerObj = {
                         'Header': {
@@ -71,6 +72,60 @@ def getDepositAccountDetails():
         return "OTP has expired.\nYou will receiving a SMS"
     else:
         return serviceRespHeader['ErrorText']
+
+@app.route("/transaction_history", methods = ['GET','POST'])
+def getTransactionHistory():
+    #Header
+    serviceName = 'getTransactionHistory'
+    userID = 'S9800980I'
+    PIN = '123456'
+    OTP = '999999'
+    #Content
+    accountID = '7681'
+    startDate = '2021-09-10 00:00:00'
+    endDate = '2021-10-20 00:00:00'
+    numRecordsPerPage = '1000'
+    pageNum = '1'
+    
+    headerObj = {
+                        'Header': {
+                        'serviceName': serviceName,
+                        'userID': userID,
+                        'PIN': PIN,
+                        'OTP': OTP
+                        }
+                        }
+    contentObj = {
+                         'Content': {
+                         'accountID': accountID,
+                         'startDate': startDate,
+                         'endDate': endDate,
+                         'numRecordsPerPage':numRecordsPerPage,
+                         'pageNum':pageNum
+                         }
+                         }
+    final_url="{0}?Header={1}&Content={2}".format(url(),json.dumps(headerObj),json.dumps(contentObj))
+    response = requests.post(final_url)
+    
+    serviceRespHeader = response.json()['Content']['ServiceResponse']['ServiceRespHeader']
+    errorCode = serviceRespHeader['GlobalErrorID']
+
+    if errorCode == '010000':
+        history = response.json()['Content']['ServiceResponse']['CDMTransactionDetail']
+        if history == {} and  serviceRespHeader['GlobalErrorID']=='010000':
+            return 'No record found'
+        else:
+            transaction_history = history['transaction_Detail']
+            # recordCount = getRecord(transaction_history)   
+            return {'transaction_history':transaction_history}
+            
+    elif errorCode == '010041':
+        return "OTP has expired.\nYou will receiving a SMS"
+    else:
+        return serviceRespHeader['ErrorText']
+
+  
+
     
     
     
